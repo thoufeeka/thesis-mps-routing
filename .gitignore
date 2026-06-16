@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+
+# Temporary files
+*.tmp
+
+# Build files if any
+build/
+
+# Large benchmark outputs
+*.log
