@@ -1,0 +1,5 @@
+circuit,qubits,depth,gates,two_qubit_gates
+qft_10,10,75,261,105
+qaoa_20,20,48,244,184
+qft_20,20,155,1021,410
+qaoa_10,10,26,82,52
