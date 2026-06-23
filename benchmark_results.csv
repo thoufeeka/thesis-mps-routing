@@ -1,0 +1,10 @@
+benchmarks/qaoa_20.qasm,20,1,0,0,1,1,0
+benchmarks/qft_20.qasm,20,77,1148,987,1,1,14.0244
+benchmarks/qft_10.qasm,10,37,253,203,1,1,19.7628
+benchmarks/vqe/vqe_real_amp_10.qasm,10,13,27,27,1,1,0
+benchmarks/vqe/vqe_real_amp_20.qasm,20,23,57,57,1,1,0
+benchmarks/vqe/vqe_two_local_10.qasm,10,37,399,380,1,1,4.7619
+benchmarks/vqe/vqe_two_local_20.qasm,20,77,1799,1795,1,1,0.222346
+benchmarks/vqe/vqe_two_local_20.qasm,20,77,1799,1795,1,1,0.222346
+benchmarks/qaoa_20.qasm,20,90,1300,1159,1,1,10.8462
+benchmarks/qaoa_10.qasm,10,46,277,237,1,1,14.4404
