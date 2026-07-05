@@ -9,17 +9,45 @@
 #include "Circuit/Circuit.h"
 #include "Simulators/MPSDummySimulator.h"
 
-double getPeakBondDimension(
-    const Simulators::MPSDummySimulator& sim)
+// [OLD] getPeakBondDimension reads getCurrentBondDimensions() only at the end.
+// Because the growth logic in growBondDimension() can shrink values back
+// toward 1.0 (due to growth factors < 1), the final state may not reflect
+// the true maximum that was ever reached during simulation.
+//
+// double getPeakBondDimension(
+//     const Simulators::MPSDummySimulator& sim)
+// {
+//     const auto& dims = sim.getCurrentBondDimensions();
+//     if (dims.empty()) return 0.0;
+//     return *std::max_element(dims.begin(), dims.end());
+// }
+
+// Apply every gate one-by-one and sample getCurrentBondDimensions() after
+// each one.  Returns the highest bond dimension seen at any bond at any
+// point during execution (the "peak" over both time and space).
+// Also accumulates and returns the total swapping cost via the sim object.
+double applyGatesTrackingPeakBond(
+    Simulators::MPSDummySimulator& sim,
+    const std::vector<std::shared_ptr<Circuits::IOperation<>>>& gates)
 {
-    const auto& dims = sim.getCurrentBondDimensions();
+    double peakBond = 1.0; // product state starts at 1
 
-    if (dims.empty())
-        return 0.0;
+    for (const auto& gate : gates)
+    {
+        sim.ApplyGate(gate);
 
-    return *std::max_element(
-        dims.begin(),
-        dims.end());
+        // Sample bond dimensions after every gate application
+        const auto& dims = sim.getCurrentBondDimensions();
+        if (!dims.empty())
+        {
+            const double localMax = *std::max_element(
+                dims.begin(), dims.end());
+            if (localMax > peakBond)
+                peakBond = localMax;
+        }
+    }
+
+    return peakBond;
 }
 
 int main(int argc, char** argv)
@@ -129,14 +157,17 @@ int main(int argc, char** argv)
     std::iota(identity.begin(), identity.end(), 0);
     origSim.SetInitialQubitsMap(identity);
 
-    origSim.ApplyGates(
-        optCirc->GetOperations());
+    // [OLD] Bulk apply — bond dim is only read at the end (final state only).
+    // origSim.ApplyGates(optCirc->GetOperations());
+    // const double origPeakBond = getPeakBondDimension(origSim);
+
+    // [NEW] Gate-by-gate apply — tracks the maximum bond dimension
+    // reached at any bond across the entire execution (not just final state).
+    const double origPeakBond =
+        applyGatesTrackingPeakBond(origSim, optCirc->GetOperations());
 
     const double origCost =
         origSim.getTotalSwappingCost();
-
-    const double origPeakBond =
-        getPeakBondDimension(origSim);
 
     //--------------------------------------------------
     // OPTIMIZED MAPPING
@@ -150,14 +181,17 @@ int main(int argc, char** argv)
 
     optSim.SetInitialQubitsMap(optimalMap);
 
-    optSim.ApplyGates(
-        optCirc->GetOperations());
+    // [OLD] Bulk apply — bond dim is only read at the end (final state only).
+    // optSim.ApplyGates(optCirc->GetOperations());
+    // const double optPeakBond = getPeakBondDimension(optSim);
+
+    // [NEW] Gate-by-gate apply — tracks the maximum bond dimension
+    // reached at any bond across the entire execution (not just final state).
+    const double optPeakBond =
+        applyGatesTrackingPeakBond(optSim, optCirc->GetOperations());
 
     const double optCost =
         optSim.getTotalSwappingCost();
-
-    const double optPeakBond =
-        getPeakBondDimension(optSim);
 
     //--------------------------------------------------
     // REPORT
