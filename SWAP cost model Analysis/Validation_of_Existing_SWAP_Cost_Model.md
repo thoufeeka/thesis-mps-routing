@@ -40,10 +40,10 @@ cubic in the bond dimension.
 -   Golub & Van Loan, *Matrix Computations* (2013) 3rd Edition
 -   Tomasz Szołdra, Rick Mukherjee, and Peter Schmelcher, “Scalable Preparation of Matrix Product States with Sequential and Brick Wall Quantum Circuits,” arXiv.Org, February 12, 2026.
 -   Aydin Deger et al., “Efficiently Simulable Quantum Circuits with Large Entanglement, Magic, and Non-Gaussianity via Code-Compiled Tensor Networks,” arXiv:2607.08396, preprint, arXiv, July 9, 2026.
--   Frank Schindler and Adam S. Jermyn, “Algorithms for Tensor Network Contraction Ordering,” preprint, January 15, 2020.
+-   Frank Schindler and Adam S. Jermyn, “Algorithms for Tensor Network Contraction Ordering,” preprint, 2020.
 ------------------------------------------------------------------------
 
-## 4.3.2 Assumption 1: Bond dimension is the dominant indicator of computational cost.
+## 4.3.2 Assumption 1: Bond dimension is the major indicators of computational cost.
 
 The existing implementation assumes that the bond dimension is the
 primary factor determining simulation cost.
@@ -56,9 +56,7 @@ Example:
 -   χ = 8 → χ³ = 512
 -   χ = 64 → χ³ = 262,144
 
-Although the bond dimension increases by only eight times, the estimated
-computational cost increases by more than 500 times. This illustrates
-why reducing bond dimensions is an effective optimisation objective.
+According to the current cost model, increasing the bond dimension from 8 to 64 increases the estimated cost by a factor of 8³ = 512.
 
 ### Advantages
 
@@ -76,7 +74,7 @@ Bond A: - χ_left = 4 - χ = 32 - χ_right = 4
 
 Bond B: - χ_left = 64 - χ = 32 - χ_right = 64
 
-Both bonds receive exactly the same estimated cost although the underlying tensor sizes differ significantly. Consequently, the actual computational effort can also differ.
+This comparison considers the SVD stage specifically. The cost of constructing the merged two-site tensor can also depend on the central bond dimension χb. Therefore, χb is still computationally relevant, but χb³ alone does not fully describe the complete two-site operation.
 
 ------------------------------------------------------------------------
 
@@ -99,7 +97,7 @@ This simplification is reasonable because the routing algorithm only needs to co
 
 ### Limitations
 
-- The true SVD complexity depends on the dimensions of the reshaped matrix,
+- For the two-site update considered here, the dimensions of the matrix passed to the SVD are determined by the outer bond dimensions χL and χR and the physical dimension d.
 
 $$O(mn\min(m,n))$$
 
@@ -170,9 +168,8 @@ Step t+1:     [Qubit 1] --- ( χ_new ) --- [Qubit 2]  <-- χ increases
                                  ↓
 Steps t+2..t+80: Every subsequent gate crossing this bond now costs O(χ_new³) instead of O(χ_old³)
 ```
-
-The current model only captures this behaviour when sufficient lookahead
-depth is available.
+The choice made at step $t$ alters the state's wavefunction, permanently raising the floor of the cost $\chi^3$ for the next 80 steps. Thus, the real cost is a multiplicative cascade, not a simple independent addition.
+The current model only captures this behaviour when sufficient lookahead depth is available.
 ## Literature
 
 - Tomasz Szołdra, Rick Mukherjee, and Peter Schmelcher, “Scalable Preparation of Matrix Product States with Sequential and Brick Wall Quantum Circuits,” arXiv.Org, February 12, 2026.
@@ -200,7 +197,7 @@ prediction.
 
 ------------------------------------------------------------------------
 
-## 4.3.7 Overall limitations and motivation
+## 4.3.7 Overall limitations and conclusion
 
 The existing model intentionally simplifies several characteristics of
 real tensor-network simulations.
@@ -216,20 +213,10 @@ In particular, it ignores:
 These simplifications make the model extremely efficient but also reduce
 its ability to accurately predict real execution time.
 
-Therefore, one of the objectives in this thesis is **not to replace Maestro's
-routing algorithm**, but rather to investigate whether the underlying
-cost model can be improved while preserving its computational
-efficiency.
+Therefore, It is **not to replace Maestro's
+routing algorithm**, but rather an investigation to extend/improve the underlying
+cost model while preserving its computational efficiency.
 
 A more accurate cost function would allow the existing routing algorithm
 to make better decisions without fundamentally changing the optimisation
 framework.
-
-------------------------------------------------------------------------
-
-## References to Study
-
-1. U. Schollwöck (2011). *The Density-Matrix Renormalization Group in the Age of Matrix Product States.*
-2. R. Orús (2014). *A Practical Introduction to Tensor Networks: Matrix Product States and Projected Entangled Pair States.*
-3. G. Vidal (2003). *Efficient Classical Simulation of Slightly Entangled Quantum Computations.*
-4. G. H. Golub and C. F. Van Loan. *Matrix Computations.*
