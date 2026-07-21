@@ -21,8 +21,7 @@ $$
 where $\chi$ is the current bond dimension.
 
 <br>
-<img src="svd-cost-model.jpg" alt="SVD" width="600">
-<br>
+<img src="svd-model.jpg" alt="SVD" width="600">
 <br>
 <img src="cost-derv.jpg" alt="cost-derv" width="600">
 <br>
