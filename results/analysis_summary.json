@@ -1,0 +1,170 @@
+{
+  "table1": [
+    {
+      "subset": "Overall",
+      "N": 108417,
+      "cubic_rho": 0.9510930601684242,
+      "svd_rho": 0.9814915031811899,
+      "improvement": 0.03039844301276573,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Solver=bdc",
+      "N": 64240,
+      "cubic_rho": 0.9192672313533523,
+      "svd_rho": 0.9765216017114909,
+      "improvement": 0.05725437035813863,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Solver=jacobi",
+      "N": 44177,
+      "cubic_rho": 0.8008736430810318,
+      "svd_rho": 0.8701525211443107,
+      "improvement": 0.06927887806327893,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QAOA",
+      "N": 25200,
+      "cubic_rho": 0.9679503978074109,
+      "svd_rho": 0.9818435804535054,
+      "improvement": 0.013893182646094515,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QFT",
+      "N": 22946,
+      "cubic_rho": 0.822306330101526,
+      "svd_rho": 0.9046196077180553,
+      "improvement": 0.08231327761652929,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_RealAmp",
+      "N": 4494,
+      "cubic_rho": 0.8833282564391605,
+      "svd_rho": 0.9714318505376207,
+      "improvement": 0.08810359409846025,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_TwoLocal",
+      "N": 55777,
+      "cubic_rho": 0.9268752182025933,
+      "svd_rho": 0.9872667131719444,
+      "improvement": 0.060391494969351034,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Qubits=10",
+      "N": 15942,
+      "cubic_rho": 0.9104585978853597,
+      "svd_rho": 0.944952525707436,
+      "improvement": 0.03449392782207639,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Qubits=20",
+      "N": 92475,
+      "cubic_rho": 0.9508542490847988,
+      "svd_rho": 0.9837912745404841,
+      "improvement": 0.03293702545568533,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QAOA,Qubits=10",
+      "N": 3346,
+      "cubic_rho": 0.950729000519586,
+      "svd_rho": 0.9690492034092518,
+      "improvement": 0.01832020288966585,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QAOA,Qubits=20",
+      "N": 21854,
+      "cubic_rho": 0.9596606289228824,
+      "svd_rho": 0.9788633714269148,
+      "improvement": 0.019202742504032422,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QFT,Qubits=10",
+      "N": 3860,
+      "cubic_rho": 0.5243560375344892,
+      "svd_rho": 0.7188029837395634,
+      "improvement": 0.1944469462050742,
+      "cubic_p": 1.0951131987899242e-271,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=QFT,Qubits=20",
+      "N": 19086,
+      "cubic_rho": 0.833466689937814,
+      "svd_rho": 0.9118587599800168,
+      "improvement": 0.07839207004220272,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_RealAmp,Qubits=10",
+      "N": 1022,
+      "cubic_rho": 0.7979419368706043,
+      "svd_rho": 0.9318236987722117,
+      "improvement": 0.1338817619016074,
+      "cubic_p": 1.6740276739103126e-226,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_RealAmp,Qubits=20",
+      "N": 3472,
+      "cubic_rho": 0.8782297861460918,
+      "svd_rho": 0.975495223655763,
+      "improvement": 0.0972654375096712,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_TwoLocal,Qubits=10",
+      "N": 7714,
+      "cubic_rho": 0.9328016460466644,
+      "svd_rho": 0.966673302938064,
+      "improvement": 0.03387165689139959,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    },
+    {
+      "subset": "Family=VQE_TwoLocal,Qubits=20",
+      "N": 48063,
+      "cubic_rho": 0.9226434225013509,
+      "svd_rho": 0.9885555106348359,
+      "improvement": 0.06591208813348504,
+      "cubic_p": 0.0,
+      "svd_p": 0.0
+    }
+  ],
+  "shape_spearman_cubic": 0.9176790492570532,
+  "shape_spearman_svd": 0.9955319947071206,
+  "shape_kendall_cubic": 0.757354653073398,
+  "shape_kendall_svd": 0.9484412873137907,
+  "disagreement_total": 31048,
+  "cubic_wins": 2281,
+  "svd_wins": 26815,
+  "ties": 1952,
+  "unresolved": 0,
+  "circuit_level_rc_svdtime": 0.9884013213454258,
+  "circuit_level_rs_svdtime": 0.9180516205698493,
+  "circuit_level_rc_simtime": 0.9392417290258672,
+  "circuit_level_rs_simtime": 0.9398680001872968
+}

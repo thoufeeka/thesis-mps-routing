@@ -1,0 +1,8 @@
+metric,value
+total_comparable_disagreement_pairs,31048
+cubic_correct,2281
+cubic_correct_pct,7.35
+svd_correct,26815
+svd_correct_pct,86.37
+ties,1952
+unresolved,0
