@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-full_analysis.py  -- Parts 2-7 of the MPS cost model validation spec.
+full_analysis.py -- Parts 2-7 of the MPS cost model validation.
 
 Produces:
   results/tables/table1_operation_level.csv
   results/tables/table2_ranking_disagreement.csv
-  results/tables/table3_circuit_ab.csv   (stub for Part 8 data merge)
-  results/tables/table4_aggregate.csv    (stub)
+  results/tables/table3_circuit_ab.csv
+  results/tables/table4_aggregate.csv
 
 Also prints a full console report.
 """
@@ -14,19 +14,15 @@ Also prints a full console report.
 import csv, math, os, sys, json
 from collections import defaultdict
 
-# ---------------------------------------------------------------------------
-# Ensure we run from project root
-# ---------------------------------------------------------------------------
-os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/..")
+# change to project root
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/..")    
 os.makedirs("results/tables", exist_ok=True)
 os.makedirs("results/figures", exist_ok=True)
 
 TRACE_FILE   = "mps_operation_trace.csv"
 CIRCUIT_FILE = "benchmark_results_costmodel.csv"
 
-# ---------------------------------------------------------------------------
 # helpers
-# ---------------------------------------------------------------------------
 def _f(s):
     try: return float(s)
     except: return None
@@ -79,9 +75,7 @@ def qubit_count(row):
     if m: return int(m.group(1))
     return _i(row.get("qubits","")) or -1
 
-# ---------------------------------------------------------------------------
 # Load data
-# ---------------------------------------------------------------------------
 print("Loading data...")
 trace_rows = []
 with open(TRACE_FILE, newline="") as f:
@@ -120,9 +114,7 @@ valid_rows = [r for r in trace_rows
 
 print(f"  valid rows (no NaN): {len(valid_rows)}")
 
-# ---------------------------------------------------------------------------
 # PART 2: OPERATION-LEVEL SPEARMAN CORRELATIONS
-# ---------------------------------------------------------------------------
 print("\n" + "="*60)
 print("PART 2: OPERATION-LEVEL SPEARMAN CORRELATIONS")
 print("="*60)
@@ -172,9 +164,7 @@ with open("results/tables/table1_operation_level.csv","w",newline="") as f:
     w.writeheader(); w.writerows(table1_rows)
 print("\n  -> Saved results/tables/table1_operation_level.csv")
 
-# ---------------------------------------------------------------------------
 # PART 3: SHAPE-GROUPED ANALYSIS
-# ---------------------------------------------------------------------------
 print("\n" + "="*60)
 print("PART 3: SHAPE-GROUPED ANALYSIS")
 print("="*60)
@@ -230,9 +220,7 @@ with open("results/tables/shape_grouped_analysis.csv","w",newline="") as f:
     w.writeheader(); w.writerows(shape_records)
 print("\n  -> Saved results/tables/shape_grouped_analysis.csv")
 
-# ---------------------------------------------------------------------------
 # PART 4: RANKING DISAGREEMENT / KENDALL τ
-# ---------------------------------------------------------------------------
 print("\n" + "="*60)
 print("PART 4: RANKING DISAGREEMENT ANALYSIS")
 print("="*60)
@@ -328,9 +316,7 @@ if disagreement_details:
         w.writeheader(); w.writerows(disagreement_details)
 print("\n  -> Saved results/tables/table2_ranking_disagreement.csv")
 
-# ---------------------------------------------------------------------------
 # PART 6: CIRCUIT-LEVEL ACCUMULATED COST vs MEASURED TOTAL SVD TIME
-# ---------------------------------------------------------------------------
 print("\n" + "="*60)
 print("PART 6: CIRCUIT-LEVEL ACCUMULATED COST vs MEASURED TIMING")
 print("="*60)
@@ -393,9 +379,7 @@ with open("results/tables/circuit_level_accumulated.csv","w",newline="") as f:
         w.writeheader(); w.writerows(merged)
 print("\n  -> Saved results/tables/circuit_level_accumulated.csv")
 
-# ---------------------------------------------------------------------------
 # PART 7: SetUpcomingGates confound documentation
-# ---------------------------------------------------------------------------
 print("\n" + "="*60)
 print("PART 7: SetUpcomingGates CONFOUND ANALYSIS")
 print("="*60)

@@ -1,0 +1,13 @@
+circuit,qubits,layers,two_qubit_gates,cost_model,bond_dim,strategy,communities,predicted_cost,peak_bond_dim,mapping_time_ms,qmap_swaps
+qaoa_10.qasm,10,46,104,cubic,64,QMAP_Heuristic,1,275.0000,1.0000,3.0817,90
+qaoa_20.qasm,20,90,368,cubic,64,QMAP_Heuristic,1,1300.0000,1.0000,6.4365,486
+qaoa_30.qasm,30,14,90,cubic,64,QMAP_Heuristic,1,501.0000,1.0000,5.3098,298
+qaoa_40.qasm,40,14,120,cubic,64,QMAP_Heuristic,1,679.0000,1.0000,8.6563,518
+qft_10.qasm,10,37,105,cubic,64,QMAP_Heuristic,1,228.0000,1.0000,1.2407,58
+qft_20.qasm,20,77,410,cubic,64,QMAP_Heuristic,1,1168.0000,1.0000,4.2095,278
+qft_30.qasm,30,114,870,cubic,64,QMAP_Heuristic,1,2032.0000,1.0000,7.5409,459
+qft_40.qasm,40,154,1560,cubic,64,QMAP_Heuristic,1,3707.0000,1.0000,25.9432,814
+random_10.qasm,10,20,93,cubic,64,QMAP_Heuristic,1,309.0000,1.0000,9.7228,149
+random_20.qasm,20,20,193,cubic,64,QMAP_Heuristic,1,1154.0000,1.0000,13.3941,701
+random_30.qasm,30,20,290,cubic,64,QMAP_Heuristic,1,290.0000,1.0000,1.6251,0
+random_40.qasm,40,20,390,cubic,64,QMAP_Heuristic,1,390.0000,1.0000,2.1567,0

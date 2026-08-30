@@ -40,9 +40,7 @@ def _f(s):
     try: return float(s)
     except: return None
 
-# ---------------------------------------------------------------------------
 # Load trace
-# ---------------------------------------------------------------------------
 print("Loading trace data for figures...")
 rows = []
 with open(TRACE_FILE, newline="") as f:
@@ -56,9 +54,7 @@ cost_c = np.array([r["_cc"] for r in rows])
 cost_s = np.array([r["_cs"] for r in rows])
 times  = np.array([r["_t"]  for r in rows])
 
-# ---------------------------------------------------------------------------
 # Figure 1: log10(C_cubic) vs log10(measured SVD time)
-# ---------------------------------------------------------------------------
 print("Figure 1: C_cubic vs SVD time (operation-level)...")
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.hexbin(np.log10(np.maximum(cost_c, 1e-9)), np.log10(np.maximum(times, 1)),
@@ -74,9 +70,7 @@ plt.tight_layout()
 plt.savefig("results/figures/fig1_ccubic_vs_svdtime.png")
 plt.close()
 
-# ---------------------------------------------------------------------------
 # Figure 2: log10(C_svd) vs log10(measured SVD time)
-# ---------------------------------------------------------------------------
 print("Figure 2: C_svd vs SVD time (operation-level)...")
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.hexbin(np.log10(np.maximum(cost_s, 1e-9)), np.log10(np.maximum(times, 1)),
@@ -92,9 +86,7 @@ plt.tight_layout()
 plt.savefig("results/figures/fig2_csvd_vs_svdtime.png")
 plt.close()
 
-# ---------------------------------------------------------------------------
 # Figure 3: Spearman ρ bar chart across subsets
-# ---------------------------------------------------------------------------
 print("Figure 3: Spearman ρ comparison bar chart...")
 if os.path.exists(TABLE1_FILE):
     t1_rows = []
@@ -124,9 +116,7 @@ if os.path.exists(TABLE1_FILE):
     plt.savefig("results/figures/fig3_spearman_comparison.png")
     plt.close()
 
-# ---------------------------------------------------------------------------
 # Figure 4: Shape-grouped predicted cost vs median measured time
-# ---------------------------------------------------------------------------
 print("Figure 4: Shape-grouped analysis...")
 if os.path.exists(SHAPE_FILE):
     srecs = []
@@ -159,9 +149,7 @@ if os.path.exists(SHAPE_FILE):
     plt.savefig("results/figures/fig4_shape_grouped.png")
     plt.close()
 
-# ---------------------------------------------------------------------------
 # Figure 5 & 6: Per-circuit end-to-end timing (from ab_routing_results.csv if available)
-# ---------------------------------------------------------------------------
 if os.path.exists(AB_FILE):
     print("Figure 5 & 6: Per-circuit A/B routing results...")
     ab_rows = []

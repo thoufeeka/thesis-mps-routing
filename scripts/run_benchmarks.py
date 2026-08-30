@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Benchmark runner for Maestro MPS Cost Model Validation.
-Supports smoke mode (3 circuits x 3 repetitions x 1 warmup)
-and full mode (8 circuits x 7 repetitions x 2 warmups).
+Runs the MPS cost model benchmark binary.
+Smoke mode: 3 circuits × 3 reps × 1 warmup.
+Full mode: 8 circuits × 7 reps × 2 warmups.
 """
 
 import sys

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Analysis script for MPS Cost Model Validation (Standard Library Only).
-Loads mps_operation_trace.csv, groups by matrix shape and SVD solver,
-computes median SVD times, Q1/Q3 IQRs, and Spearman rank correlations.
+Loads mps_operation_trace.csv and computes SVD timing statistics,
+Spearman correlations, and a circuit-level summary. Uses standard library only.
 """
 
 import os
