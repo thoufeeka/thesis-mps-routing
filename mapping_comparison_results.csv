@@ -1,0 +1,13 @@
+circuit,qubits,layers,two_qubit_gates,cost_model,bond_dim,strategy,communities,predicted_cost,peak_bond_dim,mapping_time_ms
+qft_10.qasm,10,37,105,cubic,64,BuildChain,1,203.0000,1.0000,0.1788
+qft_10.qasm,10,37,105,cubic,64,CommunityMapping,5,275.0000,1.0000,0.0196
+qft_10.qasm,10,37,105,cubic,64,TemporalComm_a1,2,259.0000,1.0000,0.0165
+qft_10.qasm,10,37,105,cubic,64,TemporalComm_a2,1,269.0000,1.0000,0.0124
+qft_10.qasm,10,37,105,cubic,64,TemporalComm_a4,1,269.0000,1.0000,0.0122
+qft_10.qasm,10,37,105,cubic,64,BondAwarePlacement,1,251.0000,1.0000,2.6457
+qft_10.qasm,10,37,105,cubic,64,LayerPriorityMapping,1,216.0000,1.0000,0.1956
+qft_10.qasm,10,37,105,cubic,64,NewPairsFirstMapping,1,209.0000,1.0000,0.1024
+qft_10.qasm,10,37,105,cubic,64,FreqSeededChain,1,209.0000,1.0000,0.0119
+qft_10.qasm,10,37,105,cubic,64,WeightedMergeChain,1,269.0000,1.0000,0.0174
+qft_10.qasm,10,37,105,cubic,64,LookaheadGroupW3,1,253.0000,1.0000,0.0139
+qft_10.qasm,10,37,105,cubic,64,LookaheadGroupW5,1,271.0000,1.0000,0.0120

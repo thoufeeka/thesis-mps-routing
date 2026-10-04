@@ -282,6 +282,14 @@ int main(int argc, char** argv)
         {Simulators::InitialMappingStrategy::TemporalCommunityMapping, 2.0, "TemporalComm_a2"},
         {Simulators::InitialMappingStrategy::TemporalCommunityMapping, 4.0, "TemporalComm_a4"},
         {Simulators::InitialMappingStrategy::BondAwarePlacement,       0.0, "BondAwarePlacement"},
+        {Simulators::InitialMappingStrategy::LayerPriorityMapping,     0.0, "LayerPriorityMapping"},
+        {Simulators::InitialMappingStrategy::NewPairsFirstMapping,     0.0, "NewPairsFirstMapping"},
+        {Simulators::InitialMappingStrategy::FreqSeededChain,          0.0, "FreqSeededChain"},
+        {Simulators::InitialMappingStrategy::WeightedMergeChain,       0.0, "WeightedMergeChain"},
+        {Simulators::InitialMappingStrategy::LookaheadGroupW3,         0.0, "LookaheadGroupW3"},
+        {Simulators::InitialMappingStrategy::LookaheadGroupW5,         0.0, "LookaheadGroupW5"},
+        {Simulators::InitialMappingStrategy::RigidSeedLocalSearch,     0.0, "RigidSeedLocalSearch"},
+        {Simulators::InitialMappingStrategy::PeripheralPinning,        0.0, "PeripheralPinning"},
     };
 
     // open (or append to) CSV output
