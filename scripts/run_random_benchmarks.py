@@ -2,7 +2,7 @@
 """Run benchmark only on the two random circuits, appending to existing CSVs."""
 import os, subprocess, sys
 
-os.chdir("/home/steffi/thesis-mps-routing")
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 BIN = "maestro/build/bin/mps_benchmark"
 CIRCUITS = [
@@ -17,7 +17,7 @@ env["OMP_NUM_THREADS"] = "1"
 env["OPENBLAS_NUM_THREADS"] = "1"
 env["MKL_NUM_THREADS"] = "1"
 env["LD_LIBRARY_PATH"] = (
-    "maestro/build:maestro/build/boost_1_89_0/lib:"
+    "maestro/build:maestro/build/deps_offline/boost_1_89_0/lib:maestro/build/boost_1_89_0/lib:"
     + env.get("LD_LIBRARY_PATH", "")
 )
 

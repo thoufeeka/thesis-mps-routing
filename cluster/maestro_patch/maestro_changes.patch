@@ -1,0 +1,768 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f680a0b..b8c940e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -148,6 +148,7 @@ set(TESTSSRC tests/aertests.cpp
+ 	tests/pauliproptests.cpp
+ 	tests/extstabtests.cpp
+ 	tests/mpsswapsopttests.cpp
++	tests/mpscostmodeltests.cpp
+ 	tests/PathIntegralTests.cpp
+ 	tests/netwsimtests.cpp
+ 	tests/mpsnetwtests.cpp
+@@ -471,3 +472,117 @@ if(BUILD_PYTHON_BINDINGS)
+         message(WARNING "Python 3.8+ (with Interpreter and Development.Module) not found. Skipping Python bindings.")
+     endif()
+ endif()
++
++# --------------------------------------------------
++# Benchmark executables (thesis MPS routing)
++# --------------------------------------------------
++
++add_executable(mps_benchmark
++    ${CMAKE_CURRENT_SOURCE_DIR}/../benchmarks/mps_benchmark.cpp)
++
++target_include_directories(mps_benchmark PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR})
++
++target_link_libraries(mps_benchmark PRIVATE maestro)
++
++if(OpenMP_CXX_FOUND)
++    if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
++        target_compile_options(mps_benchmark PUBLIC -Xpreprocessor -fopenmp)
++        if(LIBOMP_PREFIX)
++            target_include_directories(mps_benchmark PUBLIC "${LIBOMP_PREFIX}/include")
++            target_link_directories(mps_benchmark PUBLIC "${LIBOMP_PREFIX}/lib")
++        endif()
++        target_link_libraries(mps_benchmark PUBLIC ${OpenMP_CXX_LIBRARIES})
++    else()
++        target_link_libraries(mps_benchmark PUBLIC OpenMP::OpenMP_CXX)
++        target_compile_options(mps_benchmark PRIVATE ${OpenMP_CXX_FLAGS})
++    endif()
++endif()
++
++IF(SIMD_FLAGS)
++    target_compile_options(mps_benchmark PUBLIC ${SIMD_FLAGS})
++ENDIF()
++
++if(UNIX)
++    target_link_libraries(mps_benchmark PRIVATE dl)
++endif()
++
++IF(Boost_FOUND)
++    target_link_libraries(mps_benchmark PRIVATE Boost::serialization)
++ENDIF()
++
++# --------------------------------------------------
++# Mapping comparison benchmark (thesis: CommunityMapping vs BuildChain)
++# --------------------------------------------------
++
++add_executable(mps_mapping_benchmark
++    ${CMAKE_CURRENT_SOURCE_DIR}/../benchmarks/mapping_comparison_benchmark.cpp)
++
++target_include_directories(mps_mapping_benchmark PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR})
++
++target_link_libraries(mps_mapping_benchmark PRIVATE maestro)
++
++if(OpenMP_CXX_FOUND)
++    if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
++        target_compile_options(mps_mapping_benchmark PUBLIC -Xpreprocessor -fopenmp)
++        if(LIBOMP_PREFIX)
++            target_include_directories(mps_mapping_benchmark PUBLIC "${LIBOMP_PREFIX}/include")
++            target_link_directories(mps_mapping_benchmark PUBLIC "${LIBOMP_PREFIX}/lib")
++        endif()
++        target_link_libraries(mps_mapping_benchmark PUBLIC ${OpenMP_CXX_LIBRARIES})
++    else()
++        target_link_libraries(mps_mapping_benchmark PUBLIC OpenMP::OpenMP_CXX)
++        target_compile_options(mps_mapping_benchmark PRIVATE ${OpenMP_CXX_FLAGS})
++    endif()
++endif()
++
++IF(SIMD_FLAGS)
++    target_compile_options(mps_mapping_benchmark PUBLIC ${SIMD_FLAGS})
++ENDIF()
++
++if(UNIX)
++    target_link_libraries(mps_mapping_benchmark PRIVATE dl)
++endif()
++
++IF(Boost_FOUND)
++    target_link_libraries(mps_mapping_benchmark PRIVATE Boost::serialization)
++ENDIF()
++
++# --------------------------------------------------
++# Real simulation comparison benchmark (BuildChain vs RigidSeedLocalSearch)
++# --------------------------------------------------
++
++add_executable(real_sim_comparison_benchmark
++    ${CMAKE_CURRENT_SOURCE_DIR}/../benchmarks/real_sim_comparison_benchmark.cpp)
++
++target_include_directories(real_sim_comparison_benchmark PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR})
++
++target_link_libraries(real_sim_comparison_benchmark PRIVATE maestro)
++
++if(OpenMP_CXX_FOUND)
++    if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
++        target_compile_options(real_sim_comparison_benchmark PUBLIC -Xpreprocessor -fopenmp)
++        if(LIBOMP_PREFIX)
++            target_include_directories(real_sim_comparison_benchmark PUBLIC "${LIBOMP_PREFIX}/include")
++            target_link_directories(real_sim_comparison_benchmark PUBLIC "${LIBOMP_PREFIX}/lib")
++        endif()
++        target_link_libraries(real_sim_comparison_benchmark PUBLIC ${OpenMP_CXX_LIBRARIES})
++    else()
++        target_link_libraries(real_sim_comparison_benchmark PUBLIC OpenMP::OpenMP_CXX)
++        target_compile_options(real_sim_comparison_benchmark PRIVATE ${OpenMP_CXX_FLAGS})
++    endif()
++endif()
++
++IF(SIMD_FLAGS)
++    target_compile_options(real_sim_comparison_benchmark PUBLIC ${SIMD_FLAGS})
++ENDIF()
++
++if(UNIX)
++    target_link_libraries(real_sim_comparison_benchmark PRIVATE dl)
++endif()
++
++IF(Boost_FOUND)
++    target_link_libraries(real_sim_comparison_benchmark PRIVATE Boost::serialization)
++ENDIF()
+diff --git a/Simulators/Factory.cpp b/Simulators/Factory.cpp
+index 31bdcfb..bb7ced4 100644
+--- a/Simulators/Factory.cpp
++++ b/Simulators/Factory.cpp
+@@ -37,9 +37,15 @@
+ #include "Composite.h"
+ #include "GpuSimulator.h"
+ #include "QuestSimulator.h"
++#include "MPSSvdCollector.h"
+ 
+ namespace Simulators {
+ 
++MPSSvdCollector& getMPSSvdCollectorInstance() {
++  static MPSSvdCollector instance;
++  return instance;
++}
++
+ #ifdef __linux__
+ std::shared_ptr<GpuLibrary> SimulatorsFactory::gpuLibrary = nullptr;
+ std::atomic_bool SimulatorsFactory::firstTime = true;
+diff --git a/Simulators/GpuState.h b/Simulators/GpuState.h
+index 5012077..7090874 100644
+--- a/Simulators/GpuState.h
++++ b/Simulators/GpuState.h
+@@ -268,6 +268,7 @@ class GpuState : public ISimulator {
+       }
+       dummySim->setGrowthFactorGate(growthFactorGate);
+       dummySim->setGrowthFactorSwap(growthFactorSwap);
++      dummySim->setCostModel(costModel);
+       dummySim->SetInitialQubitsMap(initialMap);
+     }
+   }
+@@ -357,6 +358,13 @@ class GpuState : public ISimulator {
+     if (dummySim) dummySim->setGrowthFactorGate(factor);
+   }
+ 
++  Simulators::MPSDummySimulator::CostModel getCostModel() const { return costModel; }
++
++  void setCostModel(Simulators::MPSDummySimulator::CostModel model) {
++    costModel = model;
++    if (dummySim) dummySim->setCostModel(model);
++  }
++
+   /**
+    * @brief Configures the state.
+    *
+@@ -1181,6 +1189,7 @@ class GpuState : public ISimulator {
+           limitSize ? static_cast<long long int>(chi) : 0);
+       dummySim->setGrowthFactorGate(growthFactorGate);
+       dummySim->setGrowthFactorSwap(growthFactorSwap);
++      dummySim->setCostModel(costModel);
+     }
+ 
+     dummySim->setTotalSwappingCost(0);
+@@ -1234,6 +1243,8 @@ class GpuState : public ISimulator {
+   long long int upcomingGateIndex = 0;
+   double growthFactorSwap = 1.;
+   double growthFactorGate = 0.65; 
++  Simulators::MPSDummySimulator::CostModel costModel =
++      Simulators::MPSDummySimulator::CostModel::CentralBondCubic;
+ 
+   std::unique_ptr<Simulators::MPSDummySimulator> dummySim;
+ 
+diff --git a/Simulators/MPSDummySimulator.h b/Simulators/MPSDummySimulator.h
+index 3fd2548..9648eee 100644
+--- a/Simulators/MPSDummySimulator.h
++++ b/Simulators/MPSDummySimulator.h
+@@ -1,17 +1,7 @@
+-/**
+- * @file MPSDummySimulator.h
+- * @version 1.0
+- *
+- * @section DESCRIPTION
+- *
+- * The MPS dummy simulator class.
+- *
+- * The purpose of this class is to be able to follow the internal mapping of the
+- * qubits and the operations that are applied to them, without actually
+- * simulating anything.
+- * The swapping cost of the MPS simulator is not important, this will be used to
+- * evaluate it.
+- */
++// MPSDummySimulator.h
++//
++// Tracks qubit positions and bond dimensions through a circuit without doing
++// any real simulation. Used to estimate MPS SWAP costs for initial mapping.
+ 
+ #pragma once
+ 
+@@ -21,12 +11,15 @@
+ #include <algorithm>
+ #include <deque>
+ #include <random>
++#include <unordered_set>
++#include <numeric>
+ 
+ #include <Eigen/Eigen>
+ #include <unsupported/Eigen/CXX11/Tensor>
+ 
+ #include "QuantumGate.h"
+ #include "MPSSimulatorInterface.h"
++#include "../Circuit/Circuit.h"
+ 
+ namespace Simulators {
+ 
+@@ -36,6 +29,11 @@ class MPSDummySimulator {
+   using MatrixClass = QC::TensorNetworks::MPSSimulatorInterface::MatrixClass;
+   using GateClass = QC::TensorNetworks::MPSSimulatorInterface::GateClass;
+ 
++  enum class CostModel {
++    CentralBondCubic,
++    ThinSVDGeometry
++  };
++
+   MPSDummySimulator(size_t N) : nrQubits(N), maxVirtualExtent(0) {
+     InitQubitsMap();
+ 
+@@ -48,6 +46,7 @@ class MPSDummySimulator {
+     clone->qubitsMap = qubitsMap;
+     clone->qubitsMapInv = qubitsMapInv;
+     clone->maxVirtualExtent = maxVirtualExtent;
++    clone->costModel = costModel;
+     clone->bondCost = bondCost;
+     clone->maxBondDim = maxBondDim;
+     clone->currentBondDim = currentBondDim;
+@@ -60,6 +59,49 @@ class MPSDummySimulator {
+     return clone;
+   }
+ 
++  CostModel getCostModel() const { return costModel; }
++
++  void setCostModel(CostModel model) {
++    costModel = model;
++    recomputeAllBondCosts();
++  }
++
++  double computeBondCost(IndexType bond) const {
++    if (bond < 0 || bond >= static_cast<IndexType>(currentBondDim.size()))
++      return 0.0;
++
++    if (costModel == CostModel::ThinSVDGeometry) {
++      const IndexType leftBond = bond - 1;
++      const IndexType rightBond = bond + 1;
++
++      const double chiL = (leftBond >= 0) ? currentBondDim[leftBond] : 1.0;
++      const double chiR = (rightBond < static_cast<IndexType>(currentBondDim.size()))
++                              ? currentBondDim[rightBond]
++                              : 1.0;
++
++      return chiL * chiR * std::min(chiL, chiR);
++    } else {
++      const double chiC = currentBondDim[bond];
++      return chiC * chiC * chiC;
++    }
++  }
++
++  void updateAffectedBondCosts(IndexType changedBond) {
++    const IndexType minB = std::max<IndexType>(0, changedBond - 1);
++    const IndexType maxB = std::min<IndexType>(
++        static_cast<IndexType>(currentBondDim.size()) - 1, changedBond + 1);
++
++    for (IndexType b = minB; b <= maxB; ++b) {
++      bondCost[b] = computeBondCost(b);
++    }
++  }
++
++  void recomputeAllBondCosts() {
++    for (size_t b = 0; b < currentBondDim.size(); ++b) {
++      bondCost[b] = computeBondCost(static_cast<IndexType>(b));
++    }
++  }
++
+   size_t getNrQubits() const { return nrQubits; }
+ 
+   double getGrowthFactorSwap() const { return growthFactorSwap; }
+@@ -118,10 +160,9 @@ class MPSDummySimulator {
+ 
+       if (i < static_cast<IndexType>(nrQubits) - 1) {
+         maxBondDim[i] = static_cast<double>(maxRightExtent);
+-        const double maxRightExtentD = static_cast<double>(maxRightExtent);
+-        bondCost[i] = maxRightExtentD * maxRightExtentD * maxRightExtentD;
+       }
+     }
++    recomputeAllBondCosts();
+   }
+ 
+   void print() const {
+@@ -139,11 +180,10 @@ class MPSDummySimulator {
+     const auto qbits = gate->AffectedQubits();
+ 
+     if (qbits.size() == 1) {
+-      // 1-qubit gates are no-ops in the dummy simulator (no swap logic)
++      // 1-qubit gates don't affect swap order
+       return;
+     } else if (qbits.size() == 2) {
+-      // Reuse a single static dummy 2-qubit gate to avoid heap allocation.
+-      // Only getQubitsNumber() is checked; the matrix is never read.
++      // static dummy gate avoids a heap allocation; only getQubitsNumber() is checked
+       static const QC::Gates::AppliedGate<MatrixClass> dummy2qGate(
+           MatrixClass::Identity(4, 4), 0, 1);
+       ApplyGate(dummy2qGate, qbits[0], qbits[1]);
+@@ -183,9 +223,7 @@ class MPSDummySimulator {
+              controllingQubit1 >= static_cast<IndexType>(getNrQubits()))
+       throw std::invalid_argument("Qubit index out of bounds");
+ 
+-    // for two qubit gates:
+-    // if the qubits are not adjacent, apply swap gates until they are
+-    // don't forget to update the qubitsMap
++    // for two-qubit gates: swap until adjacent, then apply
+     if (gate.getQubitsNumber() > 1) {
+       IndexType qubit1 = qubitsMap[qubit];
+       IndexType qubit2 = qubitsMap[controllingQubit1];
+@@ -197,20 +235,10 @@ class MPSDummySimulator {
+         assert(abs(qubit1 - qubit2) == 1);
+       }
+ 
+-      // any 2-qubit gate (whether swaps were needed or not) grows the
+-      // bond dimension at the bond between the two adjacent qubits.
+-      // Charge the cost based on the bond dimension *before* the growth,
+-      // consistent with SwapQubitsToPosition: the cost reflects the size of
+-      // the SVD/contraction actually performed for this operation, and the
+-      // grown bond dimension only affects subsequent operations.
++      // charge cost before growing the bond; controlled gates have Schmidt rank 2,
++      // uncontrolled assumed rank 4 (TODO: not true for all gates)
+       const IndexType bond = std::min(qubit1, qubit2);
+       totalSwappingCost += bondCost[bond];
+-      // TODO: This is basic, the two qubit gates can have rank 2 and 4 (1 if
+-      // can be decomposed into two 1-qubit gates)
+-      // the controlled ones have Schmidt rank 2
+-      // here we assume that the others have Schmidt rank 4,
+-      // but that might not be the case for all gates
+-      // (3 is not possible for two qubit gates)
+       growBondDimension(bond, false, gate.isControlled() ? 2 : 4);
+     }
+   }
+@@ -232,7 +260,7 @@ class MPSDummySimulator {
+ 
+     totalSwappingCost = 0;
+     std::fill(currentBondDim.begin(), currentBondDim.end(), 1.0);
+-    for (size_t i = 0; i < bondCost.size(); ++i) bondCost[i] = 1;
++    recomputeAllBondCosts();
+   }
+ 
+   void SetCurrentBondDimensions(const std::vector<double>& dims) {
+@@ -240,9 +268,7 @@ class MPSDummySimulator {
+     for (size_t i = 0; i < dims.size(); ++i)
+       currentBondDim[i] = std::min(dims[i], maxBondDim[i]);
+ 
+-    // update bondCost as well, since it depends on the current bond dimensions
+-    for (size_t i = 0; i < currentBondDim.size(); ++i)
+-      bondCost[i] = currentBondDim[i] * currentBondDim[i] * currentBondDim[i];
++    recomputeAllBondCosts();
+   }
+ 
+   const std::vector<double>& getCurrentBondDimensions() const {
+@@ -258,9 +284,8 @@ class MPSDummySimulator {
+   void setTotalSwappingCost(double cost) { totalSwappingCost = cost; }
+   double getTotalSwappingCost() const { return totalSwappingCost; }
+ 
+-  // Evaluate the total cost
+-  // position, applying the current 2-qubit gate, and then simulating the
+-  // next lookaheadDepth 2-qubit gates from upcomingGates.
++  // Cost of meeting at meetPosition: applies the current gate then evaluates
++  // lookaheadDepth more gates from upcomingGates.
+   void EvaluateMeetingPositionCost(
+       IndexType meetPosition,
+       const std::vector<std::shared_ptr<Circuits::IOperation<>>>& upcomingGates,
+@@ -272,7 +297,7 @@ class MPSDummySimulator {
+       return;
+     }
+ 
+-    // skip the 1 qubit gates, advance to the next 2-qubit gate
++    // advance past any 1-qubit gates to the next 2-qubit gate
+     while (currentGateIndex <
+                static_cast<long long int>(upcomingGates.size()) &&
+            upcomingGates[currentGateIndex]->AffectedQubits().size() < 2)
+@@ -291,9 +316,7 @@ class MPSDummySimulator {
+     const IndexType qubit1 = static_cast<IndexType>(qbits[0]);
+     const IndexType qubit2 = static_cast<IndexType>(qbits[1]);
+ 
+-    // Perform the swap to the meeting position;
+-    // totalSwappingCost starts at 0 and SwapQubitsToPosition accumulates
+-    // per-bond costs, so the cost correctly depends on meetPosition.
++    // move qubits to meeting position and accumulate cost
+ 
+     IndexType realq1 = qubitsMap[qubit1];
+     IndexType realq2 = qubitsMap[qubit2];
+@@ -318,8 +341,7 @@ class MPSDummySimulator {
+         return;
+       }
+ 
+-      // skip the 1 qubit gates, advance over the current gate on the next
+-      // 2-qubit gate
++      // advance to the next 2-qubit gate
+       ++currentGateIndex;
+       while (currentGateIndex <
+                  static_cast<long long int>(upcomingGates.size()) &&
+@@ -337,6 +359,7 @@ class MPSDummySimulator {
+                               currentCost, bestCost);
+     } else {
+       MPSDummySimulator dummySim(nrQubits, LightweightInitTag{});
++      dummySim.costModel = costModel;
+       dummySim.maxVirtualExtent = maxVirtualExtent;
+       dummySim.maxBondDim = maxBondDim;
+       dummySim.currentBondDim = currentBondDim;
+@@ -351,22 +374,20 @@ class MPSDummySimulator {
+       if (realq2 - realq1 > 1)
+         dummySim.SwapQubitsToPosition(qubit1, qubit2, meetPosition);
+ 
+-      dummySim.ApplyGate(op);  // this also updates the bond dimensions in
+-                               // dummySim according to the applied gate
++      dummySim.ApplyGate(op);  // also updates bond dimensions
+ 
+       currentCost += dummySim.getTotalSwappingCost();
+ 
+-      // Pruning: if current accumulated cost already exceeds best known, prune
++      // prune if already worse than best
+       if (currentCost >= bestCost) return;
+ 
+-      // No more lookahead depth: return without further recursion
++      // no lookahead left
+       if (lookaheadDepth <= 0) {
+         if (currentCost < bestCost) bestCost = currentCost;
+         return;
+       }
+ 
+-      // skip the 1 qubit gates, advance over the current gate on the next
+-      // 2-qubit gate
++      // advance to the next 2-qubit gate
+       ++currentGateIndex;
+       while (currentGateIndex <
+                  static_cast<long long int>(upcomingGates.size()) &&
+@@ -385,9 +406,8 @@ class MPSDummySimulator {
+     }
+   }
+ 
+-  // Find the meeting position that minimizes the combined cost of the
+-  // current swap + lookahead gates.  Returns the optimal bond index.
+-  // outBestCost receives the total accumulated cost for the best position.
++  // Find the bond position that minimises cost for the current swap + lookahead.
++  // Returns the best bond index; bestCost is updated in place.
+   IndexType FindBestMeetingPosition(
+       const std::vector<std::shared_ptr<Circuits::IOperation<>>>& upcomingGates,
+       long long int currentGateIndex, int lookaheadDepth,
+@@ -447,7 +467,7 @@ class MPSDummySimulator {
+ 
+   std::vector<long long int> ComputeOptimalQubitsMap(
+       const std::vector<std::shared_ptr<Circuits::Circuit<>>>& layers,
+-      int nrShuffles = 0/*25*/, int nrSwaps = 0/*10*/) {
++      int nrShuffles = 0, int nrSwaps = 0) {
+     const IndexType nrQubits = getNrQubits();
+ 
+     if (layers.empty() || nrQubits <= 2) return qubitsMap;
+@@ -511,7 +531,7 @@ class MPSDummySimulator {
+     };
+     
+ 
+-    // Collect 2-qubit pairs from each layer, preserving layer boundaries
++    // collect 2-qubit pairs per layer
+     struct QubitPair {
+       IndexType q1, q2;
+     };
+@@ -533,14 +553,7 @@ class MPSDummySimulator {
+     }
+     if (layerPairs.empty()) return qubitsMap;
+ 
+-    // Build a linear qubit chain from ordered pairs using a group-merging
+-    // strategy.  Pairs are processed in order (earlier = more important).
+-    // - If neither qubit is placed, create a new group [q1, q2].
+-    // - If one qubit is already in a group, add the other at the group
+-    //   end (front or back) that minimizes distance to the existing one.
+-    // - If both are in different groups, merge as [gA][gB] or [gB][gA],
+-    //   whichever places q1 and q2 closer together.
+-    // - If both are already in the same group, do nothing.
++    // build a linear chain by greedily merging qubit groups in gate order
+     auto buildChain = [&](const std::vector<std::vector<QubitPair>>& orderedLP)
+         -> std::vector<long long int> {
+       std::vector<std::deque<IndexType>> groups;
+@@ -553,7 +566,7 @@ class MPSDummySimulator {
+           const int g2 = qubitGroup[p.q2];
+ 
+           if (g1 < 0 && g2 < 0) {
+-            // Neither placed: create a new group
++            // new pair, start a fresh group
+             const int gIdx = static_cast<int>(groups.size());
+             groups.push_back({p.q1, p.q2});
+             qubitGroup[p.q1] = gIdx;
+@@ -561,7 +574,7 @@ class MPSDummySimulator {
+             placedQubits.insert(p.q1);
+             placedQubits.insert(p.q2);
+           } else if (g1 >= 0 && g2 < 0) {
+-            // q1 placed, q2 not: add q2 at the closer end of q1's group
++            // q1 placed, q2 not: attach q2 to the closer end
+             auto& grp = groups[g1];
+             size_t idx = 0;
+             for (size_t i = 0; i < grp.size(); ++i)
+@@ -569,7 +582,6 @@ class MPSDummySimulator {
+                 idx = i;
+                 break;
+               }
+-            // front distance: idx + 1, back distance: grp.size() - idx
+             if (idx + 1 <= grp.size() - idx)
+               grp.push_front(p.q2);
+             else
+@@ -577,7 +589,7 @@ class MPSDummySimulator {
+             qubitGroup[p.q2] = g1;
+             placedQubits.insert(p.q2);
+           } else if (g1 < 0 && g2 >= 0) {
+-            // q2 placed, q1 not: add q1 at the closer end of q2's group
++            // q2 placed, q1 not: attach q1 to the closer end
+             auto& grp = groups[g2];
+             size_t idx = 0;
+             for (size_t i = 0; i < grp.size(); ++i)
+@@ -592,7 +604,7 @@ class MPSDummySimulator {
+             qubitGroup[p.q1] = g2;
+             placedQubits.insert(p.q1);
+           } else if (g1 != g2) {
+-            // Both in different groups: merge to minimize distance
++            // merge two groups so q1 and q2 end up adjacent
+             auto& grpA = groups[g1];
+             auto& grpB = groups[g2];
+             size_t idxA = 0, idxB = 0;
+@@ -606,10 +618,8 @@ class MPSDummySimulator {
+                 idxB = i;
+                 break;
+               }
+-            // [A][B]: q1 at idxA, q2 at |A|+idxB -> dist = |A|+idxB-idxA
+-            // [B][A]: q2 at idxB, q1 at |B|+idxA -> dist = |B|+idxA-idxB
+-            const size_t distAB = grpA.size() + idxB - idxA;
+-            const size_t distBA = grpB.size() + idxA - idxB;
++            const size_t distAB = grpA.size() + idxB - idxA;  // [A][B] distance
++            const size_t distBA = grpB.size() + idxA - idxB;  // [B][A] distance
+ 
+             int mergedGroup;
+             if (distAB <= distBA) {
+@@ -624,29 +634,29 @@ class MPSDummySimulator {
+             for (const auto q : groups[mergedGroup])
+               qubitGroup[q] = mergedGroup;
+           }
+-          // Both in the same group: do nothing
++          // both in the same group: nothing to do
+ 
+           if (placedQubits.size() == static_cast<size_t>(nrQubits))
+-            break;  // all qubits placed, can stop processing pairs
++            break;
+         }
+ 
+         if (placedQubits.size() == static_cast<size_t>(nrQubits))
+-          break;  // all qubits placed, can stop processing pairs
++          break;
+       }
+ 
+-      // Concatenate all non-empty groups
++      // concatenate all non-empty groups
+       std::vector<IndexType> chain;
+       chain.reserve(nrQubits);
+       for (const auto& grp : groups)
+         for (const auto q : grp) chain.push_back(q);
+ 
+-      // Append any remaining unplaced qubits
++      // append any qubits with no 2-qubit interactions
+       for (IndexType q = 0; q < nrQubits; ++q)
+         if (qubitGroup[q] < 0) chain.push_back(q);
+ 
+       assert(chain.size() == static_cast<size_t>(nrQubits));
+ 
+-      // Convert chain to qubitsMap: chain[physPos] = logicalQubit
++      // chain[physPos] = logicalQubit  →  result[logicalQubit] = physPos
+       std::vector<long long int> result(nrQubits);
+       for (size_t i = 0; i < chain.size(); ++i)
+         result[chain[i]] = static_cast<long long int>(i);
+@@ -666,8 +676,7 @@ class MPSDummySimulator {
+       optMap = qubitsMap;
+     }
+ 
+-    // try some random shuffles as well, in case the heuristic ordering is not
+-    // optimal
++    // try random shuffles in case the heuristic isn't optimal
+     std::mt19937 rng(42);
+     for (int i = 0; i < nrShuffles; ++i) {
+       std::shuffle(qubitsMap.begin(), qubitsMap.end(), rng);
+@@ -707,9 +716,8 @@ class MPSDummySimulator {
+       }
+     }
+ 
+-    // 2-opt local search: iteratively swap pairs of positions in the best map
+-    // and keep improvements, until no single swap can reduce the cost
+-    {  
++    // 2-opt local search: swap pairs until no single swap improves cost
++    {
+       auto candidate = optMap;
+       bool improved = true;
+       for (int improvementCount = 0; improved && improvementCount < nrSwaps;
+@@ -751,8 +759,7 @@ class MPSDummySimulator {
+ 
+   struct LightweightInitTag {};
+ 
+-  // Lightweight constructor: sets up qubit maps but skips the expensive
+-  // SetMaxBondDimension computation.  Caller must populate bond arrays.
++  // Skips SetMaxBondDimension; caller must fill bond arrays manually.
+   MPSDummySimulator(size_t N, LightweightInitTag)
+       : nrQubits(N) {
+   }
+@@ -771,9 +778,7 @@ class MPSDummySimulator {
+     SwapQubitsToPosition(qubit1, qubit2, meetPos);
+   }
+ 
+-  // Pick the meeting position with the lowest bond cost (i.e., lowest
+-  // current bond dimension), matching the real MPS simulator's
+-  // FindBestMeetingPositionLocal behavior.
++  // Pick the bond with the lowest current cost — mirrors FindBestMeetingPositionLocal.
+   IndexType ComputeHeuristicMeetPosition(IndexType realq1,
+                                          IndexType realq2) const {
+     assert(realq1 < realq2);
+@@ -792,10 +797,7 @@ class MPSDummySimulator {
+   }
+ 
+  public:
+-  // Swap two logical qubits so they meet at a specified bond position.
+-  // meetPosition is the bond index (in real/chain coordinates) where
+-  // the two qubits will end up adjacent: one at meetPosition, the other
+-  // at meetPosition+1.
++  // Move qubit1 and qubit2 until they are adjacent at meetPosition / meetPosition+1.
+   // meetPosition must be in [min(realq1,realq2), max(realq1,realq2)-1].
+   void SwapQubitsToPosition(IndexType qubit1, IndexType qubit2,
+                             IndexType meetPosition) {
+@@ -810,7 +812,7 @@ class MPSDummySimulator {
+ 
+     assert(meetPosition >= realq1 && meetPosition < realq2);
+ 
+-    // Move lower qubit (qubit1) rightward from realq1 to meetPosition
++    // shift qubit1 right toward meetPosition
+     {
+       IndexType movingReal = realq1;
+       while (movingReal < meetPosition) {
+@@ -829,7 +831,7 @@ class MPSDummySimulator {
+       }
+     }
+ 
+-    // Move upper qubit (qubit2) leftward from realq2 to meetPosition+1
++    // shift qubit2 left toward meetPosition+1
+     {
+       IndexType movingReal = realq2;
+       while (movingReal > meetPosition + 1) {
+@@ -869,32 +871,11 @@ class MPSDummySimulator {
+   double growthFactorGate = 0.35;  
+ 
+   void growBondDimension(IndexType bond, bool swap = true, int schmidtRank = 4) {
+-    // the left and right bond dimensions are relevant because:
+-    // the initial configuration before applying the swap or other gate is:
+-
+-    // - O - O -
+-    //   |   |
+-
+-    // The two physical legs have dimension 2
+-    // this is contracted into:
+-
+-    //    ---
+-    //  -|   |-
+-    //    ---
+-    //    | |
+-
+-    // the left and right dimensions stay the same and also the physical legs have dimension 2
+-
+-    // then the swap or the other gate is applied, getting a result that looks graphically as above, but of course with different values inside the tensor
+-    // swap is special, just swaps the values for (0, 1) and (1, 0) in
+-    // the physical legs, while other gates can change all values in the tensor
+-    
+-    // then the tensor is reshaped into a matrix, having dimensions 2 * leftDim x 2 * rightNeighborDim on this matrix SVD is applied, to separate out the
+-    // qubits tensors again, and the bond dimension is the number of singular
+-    // values kept after truncation (if done), or the number of non-zero
+-    // singular values if no truncation is done. The bond dimension can be at
+-    // most min(2 * min(leftDim, rightNeighborDim), maxBondDim[bond]) and the minimum is obviously 1
+-
++    // After a gate or swap on adjacent tensors, the two tensors are contracted
++    // into a matrix of size (2*chiL) x (2*chiR) and SVD is applied.
++    // The resulting bond dim is at most min(2*min(chiL,chiR), maxBondDim[bond]).
++    // Swaps are special — they only permute physical leg values, so they don't
++    // increase Schmidt rank beyond the current chiL = chiR case.
+ 
+     const IndexType leftBond = bond - 1;
+     const IndexType rightNeigborBond = bond + 1;
+@@ -912,9 +893,10 @@ class MPSDummySimulator {
+ 
+     currentBondDim[bond] = std::max(currentBondDim[bond], 1.);
+ 
+-    bondCost[bond] =
+-        currentBondDim[bond] * currentBondDim[bond] * currentBondDim[bond];
++    updateAffectedBondCosts(bond);
+   }
++ private:
++  CostModel costModel = CostModel::CentralBondCubic;
+ };
+ 
+ }  // namespace Simulators
+diff --git a/Simulators/QCSimState.h b/Simulators/QCSimState.h
+index 9fd75b4..6e64982 100644
+--- a/Simulators/QCSimState.h
++++ b/Simulators/QCSimState.h
+@@ -269,6 +269,7 @@ class QCSimState : public ISimulator {
+       }
+       dummySim->setGrowthFactorGate(growthFactorGate);
+       dummySim->setGrowthFactorSwap(growthFactorSwap);
++      dummySim->setCostModel(costModel);
+       dummySim->SetInitialQubitsMap(initialMap);
+     }
+   }
+@@ -324,6 +325,7 @@ class QCSimState : public ISimulator {
+                 limitSize ? static_cast<long long int>(chi) : 0);
+             dummySim->setGrowthFactorGate(growthFactorGate);
+             dummySim->setGrowthFactorSwap(growthFactorSwap);
++            dummySim->setCostModel(costModel);
+           }
+ 
+           // Seed dummy with current real simulator state
+@@ -477,6 +479,13 @@ class QCSimState : public ISimulator {
+     if (dummySim) dummySim->setGrowthFactorGate(factor);
+   }
+ 
++  Simulators::MPSDummySimulator::CostModel getCostModel() const { return costModel; }
++
++  void setCostModel(Simulators::MPSDummySimulator::CostModel model) {
++    costModel = model;
++    if (dummySim) dummySim->setCostModel(model);
++  }
++
+   /**
+    * @brief Configures the state.
+    *
+@@ -1726,6 +1735,8 @@ class QCSimState : public ISimulator {
+   long long int upcomingGateIndex = 0;
+   double growthFactorSwap = 1.;
+   double growthFactorGate = 0.65;
++  Simulators::MPSDummySimulator::CostModel costModel =
++      Simulators::MPSDummySimulator::CostModel::CentralBondCubic;
+ 
+   std::unique_ptr<Simulators::MPSDummySimulator> dummySim;
+ 

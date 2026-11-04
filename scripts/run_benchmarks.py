@@ -51,9 +51,10 @@ def main():
     env["MKL_NUM_THREADS"] = "1"
 
     boost_lib = os.path.abspath("maestro/build/boost_1_89_0/lib")
+    boost_offline_lib = os.path.abspath("maestro/build/deps_offline/boost_1_89_0/lib")
     build_dir = os.path.abspath("maestro/build")
     current_ld = env.get("LD_LIBRARY_PATH", "")
-    env["LD_LIBRARY_PATH"] = f"{build_dir}:{boost_lib}:{current_ld}"
+    env["LD_LIBRARY_PATH"] = f"{build_dir}:{boost_offline_lib}:{boost_lib}:{current_ld}"
 
     # Remove stale output files if starting fresh
     for csv_file in ["mps_operation_trace.csv", "benchmark_results_costmodel.csv"]:

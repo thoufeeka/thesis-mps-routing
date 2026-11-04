@@ -1,0 +1,113 @@
+diff --git a/QCSim/MPSSimulatorImpl.h b/QCSim/MPSSimulatorImpl.h
+index b40284e..d70cbe4 100644
+--- a/QCSim/MPSSimulatorImpl.h
++++ b/QCSim/MPSSimulatorImpl.h
+@@ -1,5 +1,15 @@
+ #pragma once
+ 
++#include <chrono>
++
++#if __has_include("Simulators/MPSSvdCollector.h")
++#include "Simulators/MPSSvdCollector.h"
++#elif __has_include("../../../../Simulators/MPSSvdCollector.h")
++#include "../../../../Simulators/MPSSvdCollector.h"
++#else
++#include "../../../Simulators/MPSSvdCollector.h"
++#endif
++
+ #include "MPSSimulatorBase.h"
+ 
+ #define USE_FAST_SVD 1
+@@ -412,16 +422,22 @@ namespace QC {
+ 				// the size is (2 * left bond dim) x (2 * right bond dim)
+ 				const MatrixClass thetaMatrix = ConstructTheta(gate, qubit1, dontApplyGate, isSwapGate, reversed);
+ 
+-				DecomposeAndSetGammas(thetaMatrix, qubit1, qubit2);
++				DecomposeAndSetGammas(thetaMatrix, qubit1, qubit2, isSwapGate);
+ 			}
+ 
+ 			// SVD the (already built) theta matrix, truncate it according to the bond dimension / entanglement
+ 			// limits and write back the two new gammas and the lambda in between.
+ 			// Shared by the two qubit gate application and by Trim.
+-			void DecomposeAndSetGammas(const MatrixClass& thetaMatrix, IndexType qubit1, IndexType qubit2)
++			void DecomposeAndSetGammas(const MatrixClass& thetaMatrix, IndexType qubit1, IndexType qubit2, bool isSwap = false)
+ 			{
++				const IndexType szl = qubit1 == 0 ? 1 : lambdas[qubit1 - 1].size();
++				const IndexType szr = qubit2 == static_cast<IndexType>(lambdas.size()) ? 1 : lambdas[qubit2].size();
++				const IndexType chi_center_before = lambdas[qubit1].size();
++
+ #ifdef USE_FAST_SVD
+ 				const bool computeWithJacobi = thetaMatrix.rows() < blockSizeLimit && thetaMatrix.cols() < blockSizeLimit;
++#else
++				const bool computeWithJacobi = true;
+ #endif
+ 
+ 				if (limitEntanglement)
+@@ -436,6 +452,8 @@ namespace QC {
+ #endif
+ 				}
+ 
++				auto t0 = std::chrono::steady_clock::now();
++
+ 				// n x p is decomposed into U = n x n, singular vals diagonal matrix = n x p, V^t = p x p
+ 				// the thin version U = n x min(n, p), singular vals diagonal matrix = min(n,p) x min(n,p), V^t = min(n,p) x p
+ #ifdef USE_FAST_SVD
+@@ -445,7 +463,12 @@ namespace QC {
+ #ifdef USE_FAST_SVD
+ 				else
+ 					SVD.compute(thetaMatrix);
++#endif
++
++				auto t1 = std::chrono::steady_clock::now();
++				uint64_t svd_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+ 
++#ifdef USE_FAST_SVD
+ 				const MatrixClass& UmatrixFull = computeWithJacobi ? jacobiSVD.matrixU() : SVD.matrixU();
+ 				const MatrixClass& VmatrixFull = computeWithJacobi ? jacobiSVD.matrixV() : SVD.matrixV();
+ 				const LambdaType& SvaluesFull = computeWithJacobi ? jacobiSVD.singularValues() : SVD.singularValues();
+@@ -464,9 +487,6 @@ namespace QC {
+ 
+ 				const IndexType sz = limitSize ? std::min<IndexType>(chi, szm) : szm;
+ 
+-				const IndexType szl = qubit1 == 0 ? 1 : lambdas[qubit1 - 1].size();
+-				const IndexType szr = qubit2 == static_cast<IndexType>(lambdas.size()) ? 1 : lambdas[qubit2].size();
+-
+ 				assert(UmatrixFull.cols() == VmatrixFull.cols()); // for 'thin'
+ 				assert(sz <= UmatrixFull.cols());
+ 
+@@ -481,7 +501,35 @@ namespace QC {
+ 				assert(lambdas[qubit1][0] != 0.);
+ 				lambdas[qubit1].normalize();
+ 
++				const IndexType chi_center_after = lambdas[qubit1].size();
++
+ 				SetNewGammas(Umatrix, Vmatrix, qubit1, qubit2, szl, sz, szr);
++
++				if (Simulators::MPSSvdCollector::getInstance().enabled)
++				{
++					Simulators::OperationRecord rec;
++					rec.operation_index = ++Simulators::MPSSvdCollector::getInstance().operation_counter;
++					rec.gate_type = isSwap ? "SWAP" : "GATE";
++					rec.is_swap = isSwap;
++					rec.bond = qubit1;
++
++					rec.chi_left = static_cast<double>(szl);
++					rec.chi_center_before = static_cast<double>(chi_center_before);
++					rec.chi_right = static_cast<double>(szr);
++					rec.chi_center_after = static_cast<double>(chi_center_after);
++
++					rec.svd_rows = thetaMatrix.rows();
++					rec.svd_cols = thetaMatrix.cols();
++					rec.svd_solver = computeWithJacobi ? "jacobi" : "bdc";
++
++					rec.cost_cubic_real = rec.chi_center_before * rec.chi_center_before * rec.chi_center_before;
++					rec.cost_svd_real = rec.chi_left * rec.chi_right * std::min(rec.chi_left, rec.chi_right);
++
++					rec.svd_time_ns = svd_time_ns;
++
++					Simulators::MPSSvdCollector::getInstance().updatePeakBondDim(chi_center_after);
++					Simulators::MPSSvdCollector::getInstance().recordOperation(rec);
++				}
+ 			}
+ 
+ 
