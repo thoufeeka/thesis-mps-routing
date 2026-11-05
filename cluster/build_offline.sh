@@ -91,10 +91,16 @@ mkdir -p "${MAESTRO_DIR}/tests"
 cp -f "${REPO_ROOT}/cluster/maestro_patch/tests/mpscostmodeltests.cpp" "${MAESTRO_DIR}/tests/mpscostmodeltests.cpp"
 
 if ! grep -q "real_sim_comparison_benchmark" "${MAESTRO_DIR}/CMakeLists.txt"; then
-    echo "[build_offline] Applying maestro_changes.patch..."
-    (cd "${MAESTRO_DIR}" && patch -p1 --forward < "${REPO_ROOT}/cluster/maestro_patch/maestro_changes.patch")
+    # No dependency on git/patch (missing on compute nodes): overwrite the 5 modified
+    # files with their pre-patched versions (base commit 14bf89e + thesis changes).
+    echo "[build_offline] Installing pre-patched Maestro files..."
+    cp -rf "${REPO_ROOT}/cluster/maestro_patch/files/." "${MAESTRO_DIR}/"
+    if ! grep -q "real_sim_comparison_benchmark" "${MAESTRO_DIR}/CMakeLists.txt"; then
+        echo "[build_offline] ERROR: pre-patched files were not installed" >&2
+        exit 1
+    fi
 else
-    echo "[build_offline] maestro_changes.patch already applied."
+    echo "[build_offline] Maestro already patched."
 fi
 
 # 3. Unpack offline C++ dependencies (Eigen 5, QCSim, Boost 1.89 subset)
