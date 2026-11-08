@@ -1,0 +1,5 @@
+circuit,qubits,layers,two_qubit_gates,bond_dim,bc_dummy_cost,rs_dummy_cost,dummy_cost_delta_pct,bc_sim_ms_avg,rs_sim_ms_avg,sim_speedup_pct
+vqe_real_amp_10.qasm,10,13,27,64,27,27,0,1.04541,0.849868,18.7047
+vqe_real_amp_20.qasm,20,23,57,64,57,57,0,18.2607,18.2364,0.133042
+vqe_two_local_10.qasm,10,37,135,64,380,356,-6.31579,45.8414,31.4229,31.4532
+vqe_two_local_20.qasm,20,77,570,64,1795,1721,-4.12256,7125.71,7766.31,-8.98991
